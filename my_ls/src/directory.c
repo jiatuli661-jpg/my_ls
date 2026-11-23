@@ -286,20 +286,101 @@ void read_directory(const char *path,int show_all,int show_inode,int show_blocks
     {
         printf("%ld %s\n",(long)files[i].file_stat.st_mtime,files[i].name);
     }*/
+   int maxsize=0;
+   for(int i=0;i<count;i++)
+   {
+    char buf[256];
+    snprintf(buf,sizeof(buf),"%ld",(long)files[i].file_stat.st_size);
+    int temp=strlen(buf);
+    if(temp>maxsize)
+    {
+        maxsize=temp;
+    }
+   }
+   int maxlink=0;
+   for(int i=0;i<count;i++)
+   {
+    char buf[256];
+    snprintf(buf,sizeof(buf),"%lu",(unsigned long)files[i].file_stat.st_nlink);
+    int temp=strlen(buf);
+    if(temp>maxlink)
+    {
+        maxlink=temp;
+    }
+   }
+   int maxinode=0;
+   for(int i=0;i<count;i++)
+   {
+    char buf[256];
+    snprintf(buf,sizeof(buf),"%lu",(unsigned long)files[i].file_stat.st_ino);
+    int temp=strlen(buf);
+    if(temp>maxinode)
+    {
+        maxinode=temp;
+    }
+   }
+   int maxblock=0;
+   for(int i=0;i<count;i++)
+   {
+    char buf[256];
+    snprintf(buf,sizeof(buf),"%ld",(long)files[i].file_stat.st_blocks);
+    int temp=strlen(buf);
+    if(temp>maxblock)
+    {
+        maxblock=temp;
+    }
+   }
+   int maxuse=0;
+   for(int i=0;i<count;i++)
+   {
+    struct passwd *pw=getpwuid(files[i].file_stat.st_uid);
+    int temp;
+    if(pw!=NULL)
+    {
+        temp=strlen(pw->pw_name);
+    }else {
+        char buf[256];
+        snprintf(buf,sizeof(buf),"%u",(unsigned int)files[i].file_stat.st_uid);
+        temp=strlen(buf);
+    }
+        if(temp>maxuse)
+        {
+            maxuse=temp;
+        }
+   }
+   int maxgroup=0;
+   for(int i=0;i<count;i++)
+   {
+    struct group *gr=getgrgid(files[i].file_stat.st_gid);
+    int temp;
+    if(gr!=NULL)
+    {
+        temp=strlen(gr->gr_name);
+    }else {
+        char buf[256];
+        snprintf(buf,sizeof(buf),"%u",(unsigned int)files[i].file_stat.st_gid);
+        temp=strlen(buf);
+    }
+    if(temp>maxgroup)
+    {
+        maxgroup=temp;
+    }
+   }
    for(int i=0;i<count;i++)
    {
     if(show_inode)
     {
-        printf("%lu ",(unsigned long)files[i].file_stat.st_ino);
+        printf("%*lu ",maxinode,(unsigned long)files[i].file_stat.st_ino);
+        //display_file(&files[i]);
     }
     if(show_blocks)
     {
-        printf("%ld ",(long)files[i].file_stat.st_blocks);
+        printf("%*ld ",maxblock,(long)files[i].file_stat.st_blocks);
     }
-    char qx[11];
+    //char qx[11];
     if(show_long)
     {
-        mode_t mode=files[i].file_stat.st_mode;
+       /* mode_t mode=files[i].file_stat.st_mode;
         if(S_ISREG(mode))qx[0]='-';
         else if(S_ISDIR(mode))qx[0]='d';
         else if(S_ISLNK(mode))qx[0]='l';
@@ -320,23 +401,24 @@ void read_directory(const char *path,int show_all,int show_inode,int show_blocks
         qx[8]=(mode & S_IWOTH)?'w':'-';
         qx[9]=(mode & S_IXOTH)?'x':'-';
         qx[10]='\0';
-        printf("%s ",qx);
-        printf("%ld ",(long)files[i].file_stat.st_nlink);
+        printf("%s ",qx);*/
+        display_per(&files[i]);
+        printf("%*lu ",maxlink,(unsigned long)files[i].file_stat.st_nlink);
         struct passwd *pw=getpwuid(files[i].file_stat.st_uid);
         struct group *group=getgrgid(files[i].file_stat.st_gid);
         if(pw!=NULL)
         {
-            printf("%s ",pw->pw_name);
+            printf("%-*s ",maxuse,pw->pw_name);
         }else {
-            printf("%u ",(unsigned int)files[i].file_stat.st_uid);
+            printf("%-*u ",maxuse,(unsigned int)files[i].file_stat.st_uid);
         }
         if(group!=NULL)
         {
-            printf("%s ",group->gr_name);
+            printf("%-*s ",maxgroup,group->gr_name);
         }else {
-            printf("%u ",(unsigned int)files[i].file_stat.st_gid);
+            printf("%-*u ",maxgroup,(unsigned int)files[i].file_stat.st_gid);
         }
-        printf("%ld ",(long)files[i].file_stat.st_size);
+        printf("%*ld ",maxsize,(long)files[i].file_stat.st_size);
     struct tm *time_inof=localtime(&files[i].file_stat.st_mtime);
     char time_buf[64];
     if(time_inof==NULL)
@@ -349,9 +431,76 @@ void read_directory(const char *path,int show_all,int show_inode,int show_blocks
         printf("%s ",time_buf);
     }
     }
-    
-    printf("%s\n",files[i].name);
-   }
+    ssize_t pathlen=strlen(path);
+    ssize_t namelen=strlen(files[i].name);
+    char *newpath=malloc(pathlen+namelen+2);
+    if(newpath==NULL)
+    {
+        perror("malloc");
+        continue;
+    }
+    snprintf(newpath, pathlen+namelen+2, "%s/%s", path, files[i].name);    
+    /*mode_t mode=files[i].file_stat.st_mode;
+    if(S_ISDIR(mode))
+    {
+        printf("\033[34m");
+    }else if(S_ISLNK(mode))
+    {
+        printf("\033[36m");
+    }else if(mode&(S_IXGRP|S_IXOTH|S_IXUSR))
+    {
+        printf("\033[32m");
+    }
+    printf("%s\033[0m\n",files[i].name);
+   }*/
+  display_file(&files[i],newpath);
+  if(S_ISLNK(files[i].file_stat.st_mode)&&show_long)
+  {
+    //size_t pathlen=strlen(path);
+    //size_t namelen=strlen(files[i].name);
+    //char *linkpath=malloc(pathlen+namelen+2);
+    //if(linkpath==NULL)
+    //{
+        //perror("malloc");
+        //continue;
+    //}
+    //snprintf(newpath,pathlen+namelen+2,"%s/%s",path,files[i].name);
+    char tar[1024];
+    ssize_t len=readlink(newpath,tar,sizeof(tar)-1);
+    if(len==-1)
+    {
+        perror("readlink");
+    }else{
+        //tar[len]='\0';
+        //printf(" -> %s",tar);
+    tar[len]='\0';
+    // 根据符号链接目标类型设置颜色
+    struct stat tar_stat;
+
+    if(stat(newpath,&tar_stat)==0)
+    {
+        if(S_ISDIR(tar_stat.st_mode))
+        {
+            printf(" -> \033[1;34m%s\033[0m",tar);
+        }
+        else if(tar_stat.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))
+        {
+            printf(" -> \033[1;32m%s\033[0m",tar);
+        }
+        else
+        {
+            printf(" -> \033[1;36m%s\033[0m",tar);
+        }
+    }
+    else
+    {
+        printf(" -> \033[1;36m%s\033[0m",tar);
+    }
+    }
+  }
+  free(newpath);
+  printf("\n");
+    }
    if(rec)
    {
     for(int i=0;i<dir_count;i++)

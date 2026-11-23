@@ -1,5 +1,8 @@
 //程序入口，组织各种模块
+#include<stdio.h>
 #include "ls.h"
+#include<sys/stat.h>
+#include<string.h>
 #include<locale.h>
 
 int main(int argc,char *argv[])
@@ -48,7 +51,18 @@ int main(int argc,char *argv[])
         path=argv[optind];
     }
 
-    read_directory(path,show_all,show_innode,show_blocks,show_long,sort_by_time,reverse,rec);
+    struct stat file_stat;
+    if(lstat(path,&file_stat)==-1)
+    {
+        perror("lstat");
+        return 1;
+    }
+    if(S_ISDIR(file_stat.st_mode))
+    {
+        read_directory(path,show_all,show_innode,show_blocks,show_long,sort_by_time,reverse,rec);
+    }else{
+        printf("%s\n",path);
+    }
 
     return 0;
 }

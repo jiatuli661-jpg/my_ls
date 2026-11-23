@@ -32,4 +32,6 @@ typedef struct
     struct stat file_stat;
 }FileInfo;
 void read_directory(const char *path,int show_all,int show_inode,int show_blocks,int show_long,int sort_by_time,int reverse,int rec);
+void display_file(const FileInfo *file,const char *path);
+void display_per(const FileInfo *file);
 #endif
